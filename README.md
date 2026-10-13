@@ -31,16 +31,8 @@ Cấu hình lưu tại `HKCU\Software\EVDict`. Khởi động cùng Windows dùn
 
 ## Tải về
 
-Mỗi lần push lên `main`, GitHub Actions build hai bản (tab **Actions** → lần chạy mới nhất → **Artifacts**):
-
 - **EVDict-Setup-x.y.z.exe**: trình cài đặt, không cần quyền admin, có shortcut Start Menu và tuỳ chọn khởi động cùng Windows. Gỡ cài đặt trong Settings → Apps.
 - **EVDict-Portable-x.y.z.zip**: giải nén ra đâu cũng được rồi chạy `evdict.exe`. Từ điển thêm vào lưu trong thư mục `data\` bên cạnh (do có file `portable.txt`).
-
-## CI
-
-`.github/workflows/ci.yml`: push lên mọi nhánh và mọi Pull Request đều chạy test; push lên `main` thì sau khi test đạt sẽ đóng gói bằng `scripts/package.ps1` (Inno Setup cho bản cài đặt). Dữ liệu từ điển không nằm trong git: `scripts/fetch-data.ps1` tải từ SourceForge, kiểm tra SHA-256 và được cache.
-
-Đóng gói trên máy: chạy `build.ps1` rồi `scripts\package.ps1` (cần [Inno Setup 6](https://jrsoftware.org/isinfo.php) để có bản cài đặt; không có thì chỉ tạo bản portable).
 
 ## Build
 
@@ -51,8 +43,6 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
 `build.ps1` biên dịch ứng dụng và chuyển dữ liệu StarDict trong `data\raw` thành `dist\evdict.dat`. Để kiểm tra logic tra cứu: `cargo test --release -p evdict`.
-
-Đo tốc độ: chạy app với biến môi trường `EVDICT_TRACE=1`, thời gian từng bước của mỗi lần tra được ghi vào `trace.log` cạnh exe. Kiểm tra giao diện: `EVDICT_THEME=dark` hoặc `light` để ép theme mà không đổi cài đặt Windows.
 
 ## Cấu trúc
 
