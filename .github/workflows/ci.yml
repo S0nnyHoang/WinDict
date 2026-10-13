@@ -1,7 +1,8 @@
 name: CI
 
 # Push lên mọi nhánh và mọi Pull Request: chạy test.
-# Push lên main (test đạt): build bản cài đặt .exe và bản portable .zip.
+# Push lên main (test đạt): build bản cài đặt .exe và bản portable .zip,
+# rồi tạo GitHub Release vX.Y.Z nếu version trong evdict/Cargo.toml chưa có release.
 on:
   push:
     branches: ["**"]
@@ -46,6 +47,9 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      sha: ${{ steps.meta.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
 
@@ -95,3 +99,43 @@ jobs:
           name: EVDict-Portable-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.sha }}
           path: out/EVDict-Portable-*.zip
           if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check existing release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.build.outputs.version }}
+        run: |
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG đã có, bỏ qua. Tăng version trong evdict/Cargo.toml để phát hành bản mới."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download artifacts
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: EVDict-*-${{ needs.build.outputs.version }}-${{ needs.build.outputs.sha }}
+          path: out
+          merge-multiple: true
+
+      - name: Create release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.build.outputs.version }}
+        run: |
+          gh release create "$TAG" out/EVDict-Setup-*.exe out/EVDict-Portable-*.zip \
+            -R "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "EVDict $TAG" \
+            --generate-notes

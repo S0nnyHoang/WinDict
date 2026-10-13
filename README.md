@@ -31,6 +31,8 @@ Cấu hình lưu tại `HKCU\Software\EVDict`. Khởi động cùng Windows dùn
 
 ## Tải về
 
+Tải bản mới nhất ở trang **[Releases](https://github.com/S0nnyHoang/WinDict/releases/latest)**:
+
 - **EVDict-Setup-x.y.z.exe**: trình cài đặt, không cần quyền admin, có shortcut Start Menu và tuỳ chọn khởi động cùng Windows. Gỡ cài đặt trong Settings → Apps.
 - **EVDict-Portable-x.y.z.zip**: giải nén ra đâu cũng được rồi chạy `evdict.exe`. Từ điển thêm vào lưu trong thư mục `data\` bên cạnh (do có file `portable.txt`).
 
