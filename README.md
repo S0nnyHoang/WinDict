@@ -1,0 +1,2 @@
+# WinDict
+Dictionary for Windows
