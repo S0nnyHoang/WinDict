@@ -1,0 +1,10 @@
+[package]
+name = "builddict"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Cùng phụ thuộc với evdict/src/stardict.rs
+flate2 = "1"
+miniz_oxide = "0.8"

@@ -1,0 +1,4 @@
+# Bản MSVC (dùng trên CI): link tĩnh C runtime để exe chạy được cả trên máy
+# chưa cài Visual C++ Redistributable. Bản GNU (máy dev) vốn đã tự chứa.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

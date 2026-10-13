@@ -1,0 +1,5 @@
+/target/
+/dist/
+/out/
+# Dữ liệu từ điển tải về bằng scripts/fetch-data.ps1
+/data/raw/

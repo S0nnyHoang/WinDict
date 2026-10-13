@@ -1,0 +1,97 @@
+name: CI
+
+# Push lên mọi nhánh và mọi Pull Request: chạy test.
+# Push lên main (test đạt): build bản cài đặt .exe và bản portable .zip.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Cache dictionary data
+        uses: actions/cache@v6
+        with:
+          path: data/raw/AnhViet.zip
+          key: ovdp-anhviet-6ff15080
+
+      - name: Build app and dictionary data
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Run tests
+        run: cargo test --release --workspace
+
+  build:
+    name: Build installer + portable
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Cache dictionary data
+        uses: actions/cache@v6
+        with:
+          path: data/raw/AnhViet.zip
+          key: ovdp-anhviet-6ff15080
+
+      - name: Build app and dictionary data
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+          }
+
+      - name: Version
+        id: meta
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path evdict/Cargo.toml -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "sha=$("${{ github.sha }}".Substring(0, 7))" >> $env:GITHUB_OUTPUT
+
+      - name: Package
+        shell: pwsh
+        run: ./scripts/package.ps1 -Version "${{ steps.meta.outputs.version }}" -RequireInstaller
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: EVDict-Setup-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.sha }}
+          path: out/EVDict-Setup-*.exe
+          if-no-files-found: error
+
+      - name: Upload portable
+        uses: actions/upload-artifact@v7
+        with:
+          name: EVDict-Portable-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.sha }}
+          path: out/EVDict-Portable-*.zip
+          if-no-files-found: error
